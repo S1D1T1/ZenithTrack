@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZenithTrack</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #000;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+        }
+
+        #map {
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+        }
+
+        /* Hide Leaflet attribution and zoom controls */
+        .leaflet-control-attribution,
+        .leaflet-control-zoom { display: none; }
+
+        /* Force all Leaflet containers black so gaps between tiles are invisible */
+        .leaflet-container,
+        .leaflet-pane,
+        .leaflet-tile-pane,
+        .leaflet-overlay-pane { background: #000 !important; }
+
+        /* HUD overlay */
+        #hud {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 1000;
+            font-size: 13px;
+            line-height: 1.6;
+            color: rgba(180, 200, 255, 0.7);
+            pointer-events: none;
+            user-select: none;
+        }
+
+        #hud .label {
+            color: rgba(180, 200, 255, 0.4);
+            font-size: 11px;
+        }
+
+        #hud .value {
+            color: rgba(180, 200, 255, 0.8);
+        }
+
+        #hud .tagline {
+            margin-top: 8px;
+            font-size: 11px;
+            font-style: italic;
+            color: rgba(180, 200, 255, 0.3);
+        }
+
+        /* SIMBAD object markers and labels */
+        .simbad-crosshair {
+            background: none !important;
+            border: none !important;
+            box-shadow: none !important;
+            color: rgba(255, 220, 80, 0.4);
+        }
+
+        .simbad-label {
+            background: none !important;
+            border: none !important;
+            box-shadow: none !important;
+            white-space: nowrap;
+            color: rgba(180, 200, 255, 0.9) !important;
+        }
+
+        .simbad-label span {
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        /* Location display */
+        #location-info {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            font-size: 11px;
+            color: rgba(180, 200, 255, 0.4);
+            pointer-events: none;
+            user-select: none;
+        }
+
+        /* Controls */
+        #controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            gap: 8px;
+        }
+
+        #controls button {
+            background: rgba(30, 30, 50, 0.6);
+            border: 1px solid rgba(180, 200, 255, 0.25);
+            color: rgba(180, 200, 255, 0.6);
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            padding: 4px 10px;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: all 0.15s;
+        }
+
+        #controls button:hover {
+            background: rgba(40, 40, 70, 0.8);
+            border-color: rgba(180, 200, 255, 0.4);
+            color: rgba(180, 200, 255, 0.8);
+        }
+
+        #controls button.active {
+            background: rgba(60, 60, 100, 0.7);
+            border-color: rgba(180, 200, 255, 0.5);
+            color: rgba(180, 200, 255, 0.9);
+        }
+
+        /* Startup loading overlay — semi-transparent, sits above the map/grid
+           but below the HUD (z-index 1000) so all chrome remains visible */
+        #loading-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 950;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            transition: opacity 6s ease;
+        }
+
+        #loading-overlay.fade-out {
+            opacity: 0;
+        }
+
+        #loading-overlay .loading-text {
+            font-family: 'Courier New', monospace;
+            font-size: clamp(32px, 5vw, 72px);
+            color: rgba(34, 178, 255, 0.8);
+            letter-spacing: 0.1em;
+        }
+
+        #loading-overlay .loading-dots {
+            display: inline;
+        }
+
+        #loading-overlay .loading-dots span {
+            animation: dotPulse 1.4s infinite both;
+        }
+        #loading-overlay .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+        #loading-overlay .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes dotPulse {
+            0%, 80%, 100% { opacity: 0.2; }
+            40% { opacity: 1; }
+        }
+
+        /* Tile diagnostic labels */
+        .tile-diag-label {
+            background: none !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+
+        /* Zenith crosshair - fixed at screen center, above loading overlay */
+        #zenith-crosshair {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            pointer-events: none;
+        }
+
+        /* Info panel - lower right */
+        #info-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            font-family: 'Courier New', monospace;
+            color: rgba(100, 220, 210, 0.9);
+            background: rgba(10, 30, 35, 0.7);
+            border: 1px solid rgba(100, 220, 210, 0.3);
+            border-radius: 8px;
+            padding: 12px 18px;
+            pointer-events: none;
+            user-select: none;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        #info-panel.visible {
+            opacity: 1;
+        }
+
+        #info-panel.fade-out {
+            transition: opacity 2s ease;
+            opacity: 0;
+        }
+
+        #info-panel .info-title {
+            font-size: 18px;
+            color: rgba(100, 220, 210, 0.95);
+            line-height: 1.4;
+        }
+
+        #info-panel .info-subtitle {
+            font-size: 13px;
+            color: rgba(100, 220, 210, 0.6);
+            line-height: 1.4;
+        }
+
+        #info-panel .info-text {
+            font-size: 12px;
+            color: rgba(100, 220, 210, 0.45);
+            margin-top: 4px;
+            line-height: 1.4;
+        }
+
+        /* Developer diagnostic jump button (above info panel) */
+        #btn-jump-highlight {
+            position: fixed;
+            right: 20px;
+            bottom: 140px;
+            z-index: 1000;
+            background: rgba(30, 30, 50, 0.7);
+            border: 1px solid rgba(180, 200, 255, 0.35);
+            color: rgba(180, 200, 255, 0.85);
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        #btn-jump-highlight:hover {
+            background: rgba(40, 40, 70, 0.85);
+            border-color: rgba(180, 200, 255, 0.55);
+            color: rgba(180, 200, 255, 1);
+        }
+
+        /* Loading indicator */
+        #hud-loading {
+            color: rgba(34, 178, 255, 0.6);
+            font-size: 12px;
+            margin-top: 4px;
+            height: 1.2em;
+        }
+
+        #hud-loading .blink {
+            animation: loadBlink 1s steps(2, start) infinite;
+        }
+
+        @keyframes loadBlink {
+            to { visibility: hidden; }
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <div id="location-info"></div>
+
+    <svg id="zenith-crosshair" width="24" height="24" viewBox="0 0 24 24">
+        <line x1="12" y1="2"  x2="12" y2="9"  stroke="#22B2FF" stroke-width="1.2" opacity="0.7"/>
+        <line x1="12" y1="15" x2="12" y2="22" stroke="#22B2FF" stroke-width="1.2" opacity="0.7"/>
+        <line x1="2"  y1="12" x2="9"  y2="12" stroke="#22B2FF" stroke-width="1.2" opacity="0.7"/>
+        <line x1="15" y1="12" x2="22" y2="12" stroke="#22B2FF" stroke-width="1.2" opacity="0.7"/>
+    </svg>
+
+    <div id="loading-overlay">
+        <span class="loading-text">
+        see the earth turn.<br>these stars are passing over your head. right now
+        <span class="loading-dots"><span>.</span><span>.</span><span>.</span></span></span>
+    </div>
+
+    <div id="info-panel">
+        <div class="info-title"></div>
+        <div class="info-subtitle"></div>
+        <div class="info-text"></div>
+    </div>
+
+    <button id="btn-jump-highlight" title="Jump to 30 seconds before next highlight">Zoom</button>
+
+    <div id="controls">
+        <button id="btn-fullscreen">fullscreen</button>
+        <label style="margin-left: 12px; cursor: pointer; font-size: 13px; color: rgba(180, 200, 255, 0.7);">
+            <input type="checkbox" id="chk-freeze" style="margin-right: 4px; cursor: pointer;">
+            freeze
+        </label>
+    </div>
+
+    <div id="hud">
+        <div><span class="label">UTC </span><span class="value" id="hud-utc">--:--:--</span></div>
+        <div><span class="label">RA  </span><span class="value" id="hud-ra">--h --m --s</span></div>
+        <div><span class="label">Dec </span><span class="value" id="hud-dec">--° --' --"</span></div>
+        <div><span class="label">FoV </span><span class="value" id="hud-fov">--'</span></div>
+        <div id="hud-loading">Loading images<span class="blink"> ...</span></div>
+        <div class="tagline">This is not a simulation. This is now.</div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>

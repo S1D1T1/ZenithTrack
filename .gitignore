@@ -1,0 +1,19 @@
+# macOS
+.DS_Store
+
+# Local editor/assistant state
+.claude/
+
+# Local scratch docs
+notes.md
+
+# Local backup/work variants (not part of release source)
+app prezoom/
+app save2/
+
+# Local experiments
+filter_test*.html
+
+# Python cache (if local server tools are used)
+__pycache__/
+*.pyc
