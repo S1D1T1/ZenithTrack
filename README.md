@@ -1,6 +1,6 @@
 # ZenithTrack
 
-ZenithTrack is a live, client-side sky viewer fixed to the point directly overhead (the zenith). It is built to make Earth's rotation *feel* visible: the viewport is fixed while the sky drifts continuously in real time.
+ZenithTrack is a live, client-side sky viewer fixed to the point directly overhead (the zenith). Our purpose is to make Earth's rotation *feel* visible: the viewport is fixed - the motion is not by panning or time lapse, but provided by the Earth's actual live rotation. This requires a zoom level extreme enough to make the earth's live motion visible. The more you zoom in, the bigger things get, and *the faster they move*. To reveal motion - we use our (virtual) telescope as an "Angular Velocity Amplifier" showing a tiny sliver of the sky drift visibly - and genuinely - in real time.
 
 Live page:
 
@@ -12,7 +12,7 @@ Further technical discussion:
 
 ## Current Release
 
-This first release is a browser-based implementation with:
+This browser-based implementation includes:
 
 - Real-time zenith RA/Dec tracking from user location + UTC
 - Pan-STARRS imagery tiles (client-fetched and client-processed)
