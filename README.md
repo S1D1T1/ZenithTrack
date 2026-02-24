@@ -69,11 +69,6 @@ This lets you jump simulated time without restarting the app.
 - Pan-STARRS image cutouts via STScI endpoints
 - SIMBAD TAP/ADQL queries for objects/highlights
 
-## Known Scope / Limitations
-
-- Highlight selection is tuned for current FoV strip and may be adjusted over time
-- Diagnostic features are intentionally present for iteration and QC
-
 ## License
 
 MIT. See `LICENSE`.
