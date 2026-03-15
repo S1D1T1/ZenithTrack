@@ -53,6 +53,14 @@ Developer diagnostics:
 - `freeze` (development-only)
 - `Zoom` button (jumps simulated time to 30 seconds before the next highlight)
 
+## Challenges
+Oversaturation.
+
+Sensors from this telescope survey oversaturated with even medium brightness stars.
+
+Attempts to process near monochromatic pixels (nearly pure green, pure red) and make them white, also drain the color from tiny red stars. Currently exploring topology-based solutions - “green blobs surrounded by white”, etc. such algorithms catch some but not all of the bad pixels, looking like a lazy coloring-book job. We should be able to optimize on the fact that there are no green stars.
+
+
 ## Runtime Diagnostics API
 
 From browser devtools console:
