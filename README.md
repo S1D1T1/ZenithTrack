@@ -1,6 +1,6 @@
 # ZenithTrack
 
-ZenithTrack is a live, client-side sky viewer fixed to the point directly overhead (the zenith). It is built to make Earth's rotation *feel* visible: the viewport is fixed while the sky drifts continuously in real time.
+ZenithTrack is a live, client-side sky viewer fixed to the point directly overhead (the zenith). Our purpose is to make Earth's rotation *feel* visible: the viewport is fixed - the motion is not by panning or time lapse, but provided by the Earth's actual live rotation. This requires a zoom level extreme enough to make the earth's live motion visible. The more you zoom in, the bigger things get, and *the faster they move*. To reveal motion - we use our (virtual) telescope as an "Angular Velocity Amplifier" showing a tiny sliver of the sky drift visibly - and genuinely - in real time.
 
 Live page:
 
@@ -12,7 +12,7 @@ Further technical discussion:
 
 ## Current Release
 
-This first release is a browser-based implementation with:
+This browser-based implementation includes:
 
 - Real-time zenith RA/Dec tracking from user location + UTC
 - Pan-STARRS imagery tiles (client-fetched and client-processed)
@@ -53,6 +53,14 @@ Developer diagnostics:
 - `freeze` (development-only)
 - `Zoom` button (jumps simulated time to 30 seconds before the next highlight)
 
+## Challenges
+Oversaturation.
+
+Sensors from this telescope survey oversaturated with even medium brightness stars.
+
+Attempts to process near monochromatic pixels (nearly pure green, pure red) and make them white, also drain the color from tiny red stars. Currently exploring topology-based solutions - “green blobs surrounded by white”, etc. such algorithms catch some but not all of the bad pixels, looking like a lazy coloring-book job. We should be able to optimize on the fact that there are no green stars.
+
+
 ## Runtime Diagnostics API
 
 From browser devtools console:
@@ -68,11 +76,6 @@ This lets you jump simulated time without restarting the app.
 
 - Pan-STARRS image cutouts via STScI endpoints
 - SIMBAD TAP/ADQL queries for objects/highlights
-
-## Known Scope / Limitations
-
-- Highlight selection is tuned for current FoV strip and may be adjusted over time
-- Diagnostic features are intentionally present for iteration and QC
 
 ## License
 
