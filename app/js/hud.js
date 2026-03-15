@@ -8,12 +8,30 @@
 import { formatRA, formatDec } from './zenith.js';
 
 export class HUD {
+    // Earth's equatorial rotational speed in mph
+    static EQUATORIAL_SPEED_MPH = 1037.6;
+
     constructor() {
         this.utcEl = document.getElementById('hud-utc');
         this.raEl = document.getElementById('hud-ra');
         this.decEl = document.getElementById('hud-dec');
         this.objectsEl = document.getElementById('hud-objects');
         this.fovEl = document.getElementById('hud-fov');
+        this.speedEl = document.getElementById('hud-speed');
+        this.latDeg = null;
+    }
+
+    /**
+     * Set the observer's latitude (call once after geolocation resolves).
+     * Computes and displays rotational speed immediately.
+     * @param {number} latDeg - observer latitude in degrees
+     */
+    setLatitude(latDeg) {
+        this.latDeg = latDeg;
+        if (this.speedEl) {
+            const speed = HUD.EQUATORIAL_SPEED_MPH * Math.cos(latDeg * Math.PI / 180);
+            this.speedEl.textContent = `${Math.round(speed).toLocaleString()} mph`;
+        }
     }
 
     /**

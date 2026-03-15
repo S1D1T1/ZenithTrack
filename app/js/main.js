@@ -36,7 +36,7 @@ const CONFIG = {
     // 2.5 = original design (objects cross screen in ~10-20s)
     // 5.0 = 2x wider, objects take ~20-40s to cross
     // 10.0 = 4x wider, leisurely pace
-    fovArcmin: 12.5,
+    fovArcmin: 10.0,
 
     // Tile size in arcminutes. Larger = fewer API calls & seams, bigger downloads.
     // 5 = 1200px (default), 10 = 2400px, 15 = 3600px, 25 = 6000px (max)
@@ -72,7 +72,7 @@ const CONFIG = {
     simbadMagnitudeLimit: 21,
 
     // Show the freeze checkbox (diagnostic tool, hide for public release)
-    showFreeze: true,
+    showFreeze: false,
 
     // Number of highlight objects to query from SIMBAD.
     // 8 = default for production. Increase while testing to reduce wait time.
@@ -280,6 +280,7 @@ async function init() {
     // --- Set up components ---
 
     const hud = new HUD();
+    hud.setLatitude(location.lat);
 
     // Coordinate conversion helper that closes over current zenith
     let currentRA = 0;
@@ -381,20 +382,25 @@ async function init() {
         fullscreenBtn.textContent = document.fullscreenElement ? 'exit fullscreen' : 'fullscreen';
     });
 
+    const infoBtn = document.getElementById('btn-info');
+    infoBtn.addEventListener('click', () => {
+    window.open("/zenith-tech")
+    });
+
     // Freeze checkbox (hidden unless showFreeze is true)
-    const freezeCheckbox = document.getElementById('chk-freeze');
-    const freezeLabel = freezeCheckbox.closest('label');
-    if (CONFIG.showFreeze) {
-        freezeCheckbox.addEventListener('change', () => {
-            if (freezeCheckbox.checked) {
-                clock.freeze();
-            } else {
-                clock.unfreeze();
-            }
-        });
-    } else {
-        freezeLabel.style.display = 'none';
-    }
+//     const freezeCheckbox = document.getElementById('chk-freeze');
+//     const freezeLabel = freezeCheckbox.closest('label');
+//     if (CONFIG.showFreeze) {
+//         freezeCheckbox.addEventListener('change', () => {
+//             if (freezeCheckbox.checked) {
+//                 clock.freeze();
+//             } else {
+//                 clock.unfreeze();
+//             }
+//         });
+//     } else {
+//         freezeLabel.style.display = 'none';
+//     }
 
     // Developer diagnostic: jump to 30 seconds before next highlight.
     const jumpHighlightBtn = document.getElementById('btn-jump-highlight');

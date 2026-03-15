@@ -60,6 +60,33 @@
             color: rgba(180, 200, 255, 0.3);
         }
 
+        #hud .hud-row {
+            position: relative;
+            pointer-events: auto;
+        }
+
+        #hud .hud-row::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: calc(100% + 4px);
+            left: 0;
+            background: rgba(10, 10, 30, 0.92);
+            color: rgba(180, 200, 255, 0.9);
+            border: 1px solid rgba(180, 200, 255, 0.2);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s;
+            z-index: 2000;
+        }
+
+        #hud .hud-row:hover::after {
+            opacity: 1;
+        }
+
         /* SIMBAD object markers and labels */
         .simbad-crosshair {
             background: none !important;
@@ -296,21 +323,32 @@
         <div class="info-text"></div>
     </div>
 
+<!-- 
     <button id="btn-jump-highlight" title="Jump to 30 seconds before next highlight">Zoom</button>
+ -->
 
     <div id="controls">
         <button id="btn-fullscreen">fullscreen</button>
+        <button id="btn-info">?</button>
+<!-- 
         <label style="margin-left: 12px; cursor: pointer; font-size: 13px; color: rgba(180, 200, 255, 0.7);">
             <input type="checkbox" id="chk-freeze" style="margin-right: 4px; cursor: pointer;">
             freeze
         </label>
+ -->
     </div>
 
     <div id="hud">
-        <div><span class="label">UTC </span><span class="value" id="hud-utc">--:--:--</span></div>
-        <div><span class="label">RA  </span><span class="value" id="hud-ra">--h --m --s</span></div>
-        <div><span class="label">Dec </span><span class="value" id="hud-dec">--° --' --"</span></div>
-        <div><span class="label">FoV </span><span class="value" id="hud-fov">--'</span></div>
+        <div class="hud-row" ><span class="label">UTC </span><span class="value" id="hud-utc">--:--:--</span></div>
+        <div data-tooltip="Celestial coordinates of your zenith — RA is longitude on the sky sphere, Dec is latitude (equals your ground latitude">
+        <div class="hud-row">
+        <span class="label">RA  </span><span class="value" id="hud-ra">--h --m --s</span></div>
+        <div class="hud-row" ><span class="label">Dec </span><span class="value" id="hud-dec">--° --' --"</span></div>
+        </div>
+        <div class="hud-row" data-tooltip="Field of View — the size of this patch of sky. About 1/3 of a full moon.">
+        <span class="label">FoV </span><span class="value" id="hud-fov">--'</span></div>
+        <div class="hud-row" data-tooltip="Your linear speed due to Earth's rotation. 1,037 mph at the equator, scaled by cos(latitude).">
+        <span class="label">Rotational Speed </span><span class="value" id="hud-speed">--- mph</span></div>
         <div id="hud-loading">Loading images<span class="blink"> ...</span></div>
         <div class="tagline">This is not a simulation. This is now.</div>
     </div>
