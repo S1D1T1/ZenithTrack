@@ -18,6 +18,8 @@ export class HUD {
         this.objectsEl = document.getElementById('hud-objects');
         this.fovEl = document.getElementById('hud-fov');
         this.speedEl = document.getElementById('hud-speed');
+        this.downloadsEl = document.getElementById('hud-downloads');
+        this.downloadsRowEl = document.getElementById('hud-downloads-row');
         this.latDeg = null;
     }
 
@@ -50,10 +52,30 @@ export class HUD {
             this.objectsEl.textContent = `${objectCount} SIMBAD object${objectCount !== 1 ? 's' : ''}`;
         }
         if (this.fovEl && fovArcmin !== null) {
-            // fovArcmin is always mapped to window width.
-            // Vertical FOV is proportional to aspect ratio.
-            const vFov = fovArcmin * window.innerHeight / window.innerWidth;
-            this.fovEl.textContent = `${fovArcmin.toFixed(1)}' × ${vFov.toFixed(1)}'`;
+            let hFov, vFov;
+            if (window.innerWidth >= window.innerHeight) {
+                // Landscape: width gets fovArcmin
+                hFov = fovArcmin;
+                vFov = fovArcmin * window.innerHeight / window.innerWidth;
+            } else {
+                // Portrait: height gets fovArcmin
+                vFov = fovArcmin;
+                hFov = fovArcmin * window.innerWidth / window.innerHeight;
+            }
+            this.fovEl.textContent = `${hFov.toFixed(1)}' × ${vFov.toFixed(1)}'`;
         }
+    }
+
+    /**
+     * Update the download metrics display.
+     * @param {{ count: number, bytes: number, elapsedSec: number, bytesPerSec: number } | null} metrics
+     */
+    updateDownloadMetrics(metrics) {
+        if (!this.downloadsEl || !metrics) return;
+        if (this.downloadsRowEl) this.downloadsRowEl.style.display = '';
+        const sizeMB = metrics.bytes / (1024 * 1024);
+        const bwKBs = metrics.bytesPerSec / 1024;
+        this.downloadsEl.textContent =
+            `${metrics.count} @ ${sizeMB.toFixed(1)} MB (${bwKBs.toFixed(1)} KB/s avg)`;
     }
 }

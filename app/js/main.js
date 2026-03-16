@@ -40,7 +40,7 @@ const CONFIG = {
 
     // Tile size in arcminutes. Larger = fewer API calls & seams, bigger downloads.
     // 5 = 1200px (default), 10 = 2400px, 15 = 3600px, 25 = 6000px (max)
-    tileSizeArcmin: 5,
+    tileSizeArcmin: 10,
 
     // Diagnostic mode: show coordinates on SIMBAD labels and tile corners
     diagnostic: false,
@@ -77,6 +77,10 @@ const CONFIG = {
     // Number of highlight objects to query from SIMBAD.
     // 8 = default for production. Increase while testing to reduce wait time.
     highlightCount: 28,
+
+    // Show tile download metrics in the HUD (tile count, total size, avg bandwidth).
+    // Useful for estimating server impact at scale.
+    downloadMetrics: true,
 
     // Time offset in minutes for testing. Added to the real clock.
     // +30 = app sees 30 minutes in the future, -60 = one hour in the past.
@@ -149,10 +153,41 @@ function celestialToXY(raDeg, decDeg, centerRA, centerDec) {
     return { x, y };
 }
 
+/**
+ * Clamp the displayed Dec so the viewport stays within the tile strip.
+ *
+ * @param {number} zenithDec - true zenith declination (= user latitude)
+ * @param {number} bandDec - center declination of the tile band
+ * @param {number} tileSizeDeg - tile height in degrees
+ * @param {number} fovArcmin - configured FoV in arcminutes
+ * @returns {number} clamped Dec in degrees
+ */
+function clampDec(zenithDec, bandDec, tileSizeDeg, fovArcmin) {
+    // Compute the actual viewport FoV height in degrees
+    let fovHeightDeg;
+    if (window.innerWidth >= window.innerHeight) {
+        // Landscape: height is the smaller dimension
+        fovHeightDeg = (fovArcmin / 60) * (window.innerHeight / window.innerWidth);
+    } else {
+        // Portrait: height gets the full fovArcmin
+        fovHeightDeg = fovArcmin / 60;
+    }
+
+    const maxDec = bandDec + tileSizeDeg / 2 - fovHeightDeg / 2;
+    const minDec = bandDec - tileSizeDeg / 2 + fovHeightDeg / 2;
+
+    return Math.max(minDec, Math.min(zenithDec, maxDec));
+}
+
 // --- Initialize ---
 
 async function init() {
     const location = await getLocation();
+
+    // Bucket user latitude to the nearest tile-size interval.
+    // All users within this ~18km band share the same tile Dec row.
+    const tileSizeDeg = CONFIG.tileSizeArcmin / 60;
+    const bandDec = Math.round(location.lat / (CONFIG.tileSizeArcmin / 60)) * (CONFIG.tileSizeArcmin / 60);
 
     // Show location info
     const locEl = document.getElementById('location-info');
@@ -184,7 +219,8 @@ async function init() {
     const fovInUnits = (CONFIG.fovArcmin / 60) * CONFIG.unitsPerDegree;
 
     function computeZoom() {
-        return Math.log2(window.innerWidth / fovInUnits);
+        const largerDimension = Math.max(window.innerWidth, window.innerHeight);
+        return Math.log2(largerDimension / fovInUnits);
     }
 
     let zoom = computeZoom();
@@ -518,7 +554,11 @@ async function init() {
                 dec: CONFIG.diagnostic_coordinate_lock.dec
             };
         }
-        return zenithPosition(now, location.lat, location.lon);
+        const zenith = zenithPosition(now, location.lat, location.lon);
+        return {
+            ra: zenith.ra,
+            dec: clampDec(zenith.dec, bandDec, tileSizeDeg, CONFIG.fovArcmin)
+        };
     }
 
     // --- Loading indicator ---
@@ -640,6 +680,10 @@ async function init() {
         const ra = center.ra;
         const dec = center.dec;
         hud.update(now, ra, dec, simbad.getObjectCount(), CONFIG.fovArcmin);
+
+        if (CONFIG.downloadMetrics) {
+            hud.updateDownloadMetrics(imageLayer.getDownloadMetrics());
+        }
 
         // Trigger SIMBAD query. When coordinate-locked, offset RA backward
         // so the internal +prefetchAheadDeg lands on the locked center.

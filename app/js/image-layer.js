@@ -19,7 +19,7 @@
 import { TILE_SIZE_ARCMIN } from './image-source.js';
 
 // How many extra tile-widths ahead of the FOV edge to prefetch
-const PREFETCH_EXTRA = 2;
+const PREFETCH_EXTRA = 0;
 
 // How many extra tile-widths behind the FOV edge to keep before evicting
 const KEEP_EXTRA = 1;
@@ -117,15 +117,9 @@ export class ImageLayer {
         const centerRAIdx = this._snapRAIndex(centerRA);
         const centerDecIdx = this._snapDecIndex(centerDec);
 
-        // Dec rows: scale with viewport aspect ratio
-        // Use window dimensions to figure out how many Dec tiles we need
-        const aspectRatio = window.innerHeight / window.innerWidth;
-        const decFovArcmin = this.fov * aspectRatio;
-        const decTilesHalf = Math.ceil((decFovArcmin / TILE_SIZE_ARCMIN) / 2) + 1;
-        const decIndices = [];
-        for (let d = -decTilesHalf; d <= decTilesHalf; d++) {
-            decIndices.push(centerDecIdx + d);
-        }
+        // Single Dec row: only fetch tiles at the band center Dec index.
+        // The displayed Dec is already clamped to stay within this tile row.
+        const decIndices = [centerDecIdx];
 
         // Collect which tiles should exist
         const neededKeys = new Set();
@@ -251,6 +245,11 @@ export class ImageLayer {
         } finally {
             this.pending.delete(key);
         }
+    }
+
+    /** Download metrics from the image source (if supported) */
+    getDownloadMetrics() {
+        return this.imageSource.getDownloadMetrics?.() ?? null;
     }
 
     /** Number of tiles currently being fetched */

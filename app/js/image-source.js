@@ -69,6 +69,25 @@ export class PanSTARRSImageSource {
     constructor() {
         // Noise gate enabled by default
         this.noiseGateEnabled = true;
+
+        // Download metrics
+        this._downloadCount = 0;
+        this._downloadBytes = 0;
+        this._startTime = performance.now();
+    }
+
+    /**
+     * Return download metrics since app start.
+     * @returns {{ count: number, bytes: number, elapsedSec: number, bytesPerSec: number }}
+     */
+    getDownloadMetrics() {
+        const elapsedSec = (performance.now() - this._startTime) / 1000;
+        return {
+            count: this._downloadCount,
+            bytes: this._downloadBytes,
+            elapsedSec,
+            bytesPerSec: elapsedSec > 0 ? this._downloadBytes / elapsedSec : 0
+        };
     }
 
     /**
@@ -132,6 +151,8 @@ export class PanSTARRSImageSource {
         if (!cutoutResp.ok) throw new Error(`PanSTARRS cutout HTTP ${cutoutResp.status}`);
 
         const blob = await cutoutResp.blob();
+        this._downloadCount++;
+        this._downloadBytes += blob.size;
 
         const t0 = performance.now();
         const result = await this._processImage(blob);
