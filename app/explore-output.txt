@@ -1,0 +1,72 @@
+ZenithTrack/app> node explore-metadata.js
+User latitude: 42.4°
+Band Dec: 42.3333° (2540.0')
+Tile size: 10' = 0.1667°
+Total tiles for full 360°: 2160
+
+=== Raw response for first sample ===
+
+projcell subcell ra dec filter mjd type filename shortname badflag
+2157 54 0.0 42.33333333333333 g 0.0 stack /rings.v3.skycell/2157/054/rings.v3.skycell.2157.054.stk.g.unconv.fits rings.v3.skycell.2157.054.stk.g.unconv.fits 0
+2157 54 0.0 42.33333333333333 i 0.0 stack /rings.v3.skycell/2157/054/rings.v3.skycell.2157.054.stk.i.unconv.fits rings.v3.skycell.2157.054.stk.i.unconv.fits 0
+2157 54 0.0 42.33333333333333 r 0.0 stack /rings.v3.skycell/2157/054/rings.v3.skycell.2157.054.stk.r.unconv.fits rings.v3.skycell.2157.054.stk.r.unconv.fits 0
+2157 54 0.0 42.33333333333333 y 0.0 stack /rings.v3.skycell/2157/054/rings.v3.skycell.2157.054.stk.y.unconv.fits rings.v3.skycell.2157.054.stk.y.unconv.fits 0
+2157 54 0.0 42.33333333333333 z 0.0 stack /rings.v3.skycell/2157/054/rings.v3.skycell.2157.054.stk.z.unconv.fits rings.v3.skycell.2157.054.stk.z.unconv.fits 0
+
+=== Parsed filenames across RA samples ===
+
+    RA  filter  filename
+--------------------------------------------------------------------------------
+     0° g       /rings.v3.skycell/2157/054/rings.v3.skycell.2157.054.stk.g.unconv.fits
+     0° r       /rings.v3.skycell/2157/054/rings.v3.skycell.2157.054.stk.r.unconv.fits
+     0° i       /rings.v3.skycell/2157/054/rings.v3.skycell.2157.054.stk.i.unconv.fits
+
+    10° g       /rings.v3.skycell/2159/056/rings.v3.skycell.2159.056.stk.g.unconv.fits
+    10° r       /rings.v3.skycell/2159/056/rings.v3.skycell.2159.056.stk.r.unconv.fits
+    10° i       /rings.v3.skycell/2159/056/rings.v3.skycell.2159.056.stk.i.unconv.fits
+
+    20° g       /rings.v3.skycell/2161/057/rings.v3.skycell.2161.057.stk.g.unconv.fits
+    20° r       /rings.v3.skycell/2161/057/rings.v3.skycell.2161.057.stk.r.unconv.fits
+    20° i       /rings.v3.skycell/2161/057/rings.v3.skycell.2161.057.stk.i.unconv.fits
+
+    30° g       /rings.v3.skycell/2163/058/rings.v3.skycell.2163.058.stk.g.unconv.fits
+    30° r       /rings.v3.skycell/2163/058/rings.v3.skycell.2163.058.stk.r.unconv.fits
+    30° i       /rings.v3.skycell/2163/058/rings.v3.skycell.2163.058.stk.i.unconv.fits
+
+    90° g       /rings.v3.skycell/2174/054/rings.v3.skycell.2174.054.stk.g.unconv.fits
+    90° r       /rings.v3.skycell/2174/054/rings.v3.skycell.2174.054.stk.r.unconv.fits
+    90° i       /rings.v3.skycell/2174/054/rings.v3.skycell.2174.054.stk.i.unconv.fits
+
+   180° g       /rings.v3.skycell/2191/054/rings.v3.skycell.2191.054.stk.g.unconv.fits
+   180° r       /rings.v3.skycell/2191/054/rings.v3.skycell.2191.054.stk.r.unconv.fits
+   180° i       /rings.v3.skycell/2191/054/rings.v3.skycell.2191.054.stk.i.unconv.fits
+
+   270° g       /rings.v3.skycell/2208/054/rings.v3.skycell.2208.054.stk.g.unconv.fits
+   270° r       /rings.v3.skycell/2208/054/rings.v3.skycell.2208.054.stk.r.unconv.fits
+   270° i       /rings.v3.skycell/2208/054/rings.v3.skycell.2208.054.stk.i.unconv.fits
+
+   350° g       /rings.v3.skycell/2223/053/rings.v3.skycell.2223.053.stk.g.unconv.fits
+   350° r       /rings.v3.skycell/2223/053/rings.v3.skycell.2223.053.stk.r.unconv.fits
+   350° i       /rings.v3.skycell/2223/053/rings.v3.skycell.2223.053.stk.i.unconv.fits
+
+=== Pattern analysis ===
+
+Unique directory paths: 8
+  /rings.v3.skycell/2157/054
+  /rings.v3.skycell/2159/056
+  /rings.v3.skycell/2161/057
+  /rings.v3.skycell/2163/058
+  /rings.v3.skycell/2174/054
+  /rings.v3.skycell/2191/054
+  /rings.v3.skycell/2208/054
+  /rings.v3.skycell/2223/053
+
+Filename components (last segment):
+  RA=0°: rings.v3.skycell.2157.054.stk.i.unconv.fits
+  RA=10°: rings.v3.skycell.2159.056.stk.i.unconv.fits
+  RA=20°: rings.v3.skycell.2161.057.stk.i.unconv.fits
+  RA=30°: rings.v3.skycell.2163.058.stk.i.unconv.fits
+  RA=90°: rings.v3.skycell.2174.054.stk.i.unconv.fits
+  RA=180°: rings.v3.skycell.2191.054.stk.i.unconv.fits
+  RA=270°: rings.v3.skycell.2208.054.stk.i.unconv.fits
+  RA=350°: rings.v3.skycell.2223.053.stk.i.unconv.fits

@@ -189,6 +189,38 @@ async function init() {
     const tileSizeDeg = CONFIG.tileSizeArcmin / 60;
     const bandDec = Math.round(location.lat / (CONFIG.tileSizeArcmin / 60)) * (CONFIG.tileSizeArcmin / 60);
 
+    // --- Load cached metadata ---
+
+    // Derive metadata filename from bandDec.
+    // Convention: "dec" + abs(degrees*100) truncated to int, with "neg" prefix for south.
+    const bandDecHundredths = Math.round(Math.abs(bandDec) * 100);
+    const metadataFile = bandDec < 0
+        ? `metadata/decneg${bandDecHundredths}.json`
+        : `metadata/dec${bandDecHundredths}.json`;
+
+    let metadata;
+    try {
+        const metaResp = await fetch(metadataFile);
+        if (!metaResp.ok) {
+            throw new Error(`HTTP ${metaResp.status}`);
+        }
+        metadata = await metaResp.json();
+        console.log(`Metadata loaded: ${metadataFile} (${metadata.tileCount} tiles, bandDec=${metadata.bandDec}°)`);
+    } catch (err) {
+        // Show error in loading overlay and stop — app is non-functional without metadata
+        const loadingOverlay = document.getElementById('loading-overlay');
+        if (loadingOverlay) {
+            loadingOverlay.innerHTML = `
+                <div style="text-align:center; color:#ff6666; padding:2em; font-family:monospace;">
+                    <p style="font-size:1.4em;">No sky data for this latitude</p>
+                    <p>Missing: ${metadataFile}</p>
+                    <p style="color:#999; font-size:0.9em;">Band Dec: ${bandDec.toFixed(4)}°<br>${err.message}</p>
+                </div>`;
+        }
+        console.error(`Failed to load metadata (${metadataFile}):`, err);
+        return; // Stop init — don't start the clock
+    }
+
     // Show location info
     const locEl = document.getElementById('location-info');
     locEl.textContent = `${location.source} (${location.lat.toFixed(2)}°, ${location.lon.toFixed(2)}°)`;
@@ -264,39 +296,13 @@ async function init() {
         document.body.removeChild(a);
     }
     
-    // Helper: build original Pan-STARRS URL for a tile
-    async function getOriginalPanSTARRSURL(raDeg, decDeg) {
-        // This duplicates logic from PanSTARRSImageSource, but we need the URL before processing
-        const searchUrl = 'https://ps1images.stsci.edu/cgi-bin/ps1filenames.py';
-        const searchParams = new URLSearchParams({ ra: raDeg, dec: decDeg });
-        const searchResp = await fetch(`${searchUrl}?${searchParams}`);
-        if (!searchResp.ok) throw new Error(`PanSTARRS search HTTP ${searchResp.status}`);
+    // Helper: build original Pan-STARRS URL for a tile (uses cached metadata)
+    function getOriginalPanSTARRSURL(raDeg, decDeg) {
+        const raIndex = Math.round(raDeg / metadata.tileSizeDeg) % metadata.tileCount;
+        const tile = metadata.tiles[raIndex];
+        if (!tile) throw new Error(`No metadata for RA index ${raIndex}`);
 
-        const text = await searchResp.text();
-        const lines = text.trim().split('\n');
-        const header = lines[0].split(/\s+/);
-        const filterIdx = header.indexOf('filter');
-        const filenameIdx = header.indexOf('filename');
-
-        if (filterIdx === -1 || filenameIdx === -1) {
-            throw new Error('PanSTARRS: unexpected header format');
-        }
-
-        const filterFiles = {};
-        for (let i = 1; i < lines.length; i++) {
-            const cols = lines[i].split(/\s+/);
-            if (cols.length >= header.length) {
-                filterFiles[cols[filterIdx]] = cols[filenameIdx];
-            }
-        }
-
-        for (const f of ['g', 'r', 'i']) {
-            if (!filterFiles[f]) throw new Error(`PanSTARRS: missing ${f} filter`);
-        }
-
-        const basename = (path) => path.split('/').pop();
         const cutoutUrl = 'https://ps1images.stsci.edu/cgi-bin/fitscut.cgi';
-        
         const tilePixelsDec = Math.round(CONFIG.tileSizeArcmin * 60 / 0.25);
         const tilePixelsRA  = Math.round(tilePixelsDec * Math.cos(decDeg * Math.PI / 180));
 
@@ -305,9 +311,9 @@ async function init() {
             dec: decDeg,
             size: `${tilePixelsRA},${tilePixelsDec}`,
             format: 'jpeg',
-            red: basename(filterFiles['i']),
-            green: basename(filterFiles['r']),
-            blue: basename(filterFiles['g'])
+            red: tile.i,
+            green: tile.r,
+            blue: tile.g
         });
 
         return `${cutoutUrl}?${cutoutParams}`;
@@ -330,7 +336,7 @@ async function init() {
     setTileSizeArcmin(CONFIG.tileSizeArcmin);
 
     // Image layer goes first (renders behind grid and labels)
-    const imageSource = new PanSTARRSImageSource('images/stub_tile.jpg');
+    const imageSource = new PanSTARRSImageSource(metadata);
     const imageLayer = new ImageLayer(map, CONFIG.fovArcmin, imageSource);
 
     const grid = new GridLayer(map, CONFIG.fovArcmin, CONFIG.gridSpacingArcmin);
@@ -366,7 +372,7 @@ async function init() {
         try {
             // Download original
             console.log('Fetching original Pan-STARRS tile...');
-            const originalUrl = await getOriginalPanSTARRSURL(tile.raDeg, tile.decDeg);
+            const originalUrl = getOriginalPanSTARRSURL(tile.raDeg, tile.decDeg);
             const originalResp = await fetch(originalUrl);
             const originalBlob = await originalResp.blob();
             const originalBlobUrl = URL.createObjectURL(originalBlob);

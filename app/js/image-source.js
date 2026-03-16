@@ -66,7 +66,24 @@ export class StubImageSource {
 // --- PanSTARRS Image Source ---
 
 export class PanSTARRSImageSource {
-    constructor() {
+    /**
+     * @param {object} metadata - parsed metadata JSON with { tileSizeDeg, tileCount, tiles[] }
+     */
+    constructor(metadata) {
+        if (!metadata || !metadata.tiles || !metadata.tileCount) {
+            throw new Error('PanSTARRSImageSource requires a metadata object with tiles array');
+        }
+
+        this.metadata = metadata;
+        this.tileSizeDeg = metadata.tileSizeDeg;
+        this.tileCount = metadata.tileCount;
+
+        // Build a lookup map: raIndex → { g, r, i }
+        this._tileLookup = new Map();
+        for (const tile of metadata.tiles) {
+            this._tileLookup.set(tile.raIndex, tile);
+        }
+
         // Noise gate enabled by default
         this.noiseGateEnabled = true;
 
@@ -91,41 +108,30 @@ export class PanSTARRSImageSource {
     }
 
     /**
-     * Fetches a color JPEG cutout from the PanSTARRS API.
+     * Look up g/r/i filenames from cached metadata for the given RA.
+     * @param {number} raDeg - tile center RA in degrees (already snapped by image-layer)
+     * @returns {{ g: string, r: string, i: string }}
+     */
+    _lookupTile(raDeg) {
+        const raIndex = Math.round(raDeg / this.tileSizeDeg) % this.tileCount;
+        const tile = this._tileLookup.get(raIndex);
+        if (!tile) {
+            throw new Error(`No metadata for RA index ${raIndex} (RA=${raDeg.toFixed(4)}°)`);
+        }
+        return tile;
+    }
+
+    /**
+     * Fetches a color JPEG cutout from the PanSTARRS fitscut API.
+     * Filenames come from cached metadata (no ps1filenames.py call).
      */
     async getImageUrl(raDeg, decDeg) {
-        // Step 1: find filter filenames
-        const searchUrl = 'https://ps1images.stsci.edu/cgi-bin/ps1filenames.py';
-        const searchParams = new URLSearchParams({ ra: raDeg, dec: decDeg });
-        const searchResp = await fetch(`${searchUrl}?${searchParams}`);
-        if (!searchResp.ok) throw new Error(`PanSTARRS search HTTP ${searchResp.status}`);
+        // Step 1: look up g/r/i filenames from cached metadata
+        const tile = this._lookupTile(raDeg);
 
-        const text = await searchResp.text();
-        const lines = text.trim().split('\n');
-        const header = lines[0].split(/\s+/);
-        const filterIdx = header.indexOf('filter');
-        const filenameIdx = header.indexOf('filename');
-
-        if (filterIdx === -1 || filenameIdx === -1) {
-            throw new Error('PanSTARRS: unexpected header format');
-        }
-
-        const filterFiles = {};
-        for (let i = 1; i < lines.length; i++) {
-            const cols = lines[i].split(/\s+/);
-            if (cols.length >= header.length) {
-                filterFiles[cols[filterIdx]] = cols[filenameIdx];
-            }
-        }
-
-        for (const f of ['g', 'r', 'i']) {
-            if (!filterFiles[f]) throw new Error(`PanSTARRS: missing ${f} filter`);
-        }
-
-        // Step 2: request color JPEG
-        const basename = (path) => path.split('/').pop();
-
+        // Step 2: request color JPEG from fitscut.cgi
         const cutoutUrl = 'https://ps1images.stsci.edu/cgi-bin/fitscut.cgi';
+
         // Compute pixel size from tile arcmin at native 0.25 arcsec/pixel.
         // Dec (height): 1200px for 5 arcmin — straightforward.
         // RA (width): PanSTARRS uses TAN projection where 0.25"/px is on
@@ -141,9 +147,9 @@ export class PanSTARRSImageSource {
             dec: decDeg,
             size: `${tilePixelsRA},${tilePixelsDec}`,
             format: 'jpeg',
-            red: basename(filterFiles['i']),
-            green: basename(filterFiles['r']),
-            blue: basename(filterFiles['g'])
+            red: tile.i,
+            green: tile.r,
+            blue: tile.g
         });
 
         const rawUrl = `${cutoutUrl}?${cutoutParams}`;
@@ -154,14 +160,7 @@ export class PanSTARRSImageSource {
         this._downloadCount++;
         this._downloadBytes += blob.size;
 
-        const t0 = performance.now();
         const result = await this._processImage(blob);
-        const elapsed = performance.now() - t0;
-
-        // Log with UUID so processed images in Sources tab can be traced to originals
-        const uuid = result.split('/').pop();
-        // console.log(`PanSTARRS tile ${uuid} | ${elapsed.toFixed(0)}ms gate=${this.noiseGateEnabled} | original: ${rawUrl}`);
-
         return result;
     }
 
