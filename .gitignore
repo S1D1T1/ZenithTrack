@@ -14,6 +14,14 @@ app save2/
 # Local experiments
 filter_test*.html
 
+# Metadata scraping scripts (local-only, not for public repo)
+metadata scripts/
+app/bulk-scrape-metadata.js
+app/precache-metadata.js
+app/scrape-metadata*.js
+app/scrape-stone.js
+app/scrape.sh
+
 # Python cache (if local server tools are used)
 __pycache__/
 *.pyc
