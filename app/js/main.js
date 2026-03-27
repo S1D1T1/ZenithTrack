@@ -195,8 +195,8 @@ async function init() {
     // Convention: "dec" + abs(degrees*100) truncated to int, with "neg" prefix for south.
     const bandDecHundredths = Math.round(Math.abs(bandDec) * 100);
     const metadataFile = bandDec < 0
-        ? `metadata/decneg${bandDecHundredths}.json`
-        : `metadata/dec${bandDecHundredths}.json`;
+        ? `metadata/metadata_decneg${bandDecHundredths}.json`
+        : `metadata/metadata_dec${bandDecHundredths}.json`;
 
     let metadata;
     try {
@@ -411,13 +411,7 @@ async function init() {
     // --- Controls ---
 
     const fullscreenBtn = document.getElementById('btn-fullscreen');
-    fullscreenBtn.addEventListener('click', () => {
-        if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen().catch(() => {});
-        } else {
-            document.exitFullscreen();
-        }
-    });
+    fullscreenBtn.addEventListener('click', toggleFullscreen);
 
     // Update button text on fullscreen change
     document.addEventListener('fullscreenchange', () => {
@@ -427,6 +421,62 @@ async function init() {
     const infoBtn = document.getElementById('btn-info');
     infoBtn.addEventListener('click', () => {
     window.open("/zenith-tech")
+    });
+
+    // --- Keyboard shortcuts ---
+
+    let clearMode = false;
+    const clearModeElements = [
+        document.getElementById('hud'),
+        document.getElementById('location-info'),
+        document.getElementById('controls'),
+        document.getElementById('zenith-crosshair'),
+        document.getElementById('info-panel'),
+        document.getElementById('btn-jump-highlight')
+    ].filter(Boolean);
+
+    function toggleClearMode() {
+        clearMode = !clearMode;
+        for (const el of clearModeElements) {
+            el.style.display = clearMode ? 'none' : '';
+        }
+        grid.setVisible(!clearMode);
+        labels.setVisible(!clearMode);
+
+        // Brief toast
+        const toast = document.createElement('div');
+        toast.textContent = clearMode
+            ? 'Clear mode. Press C to exit.'
+            : 'Clear mode off.';
+        toast.style.cssText = `
+            position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+            z-index:2000; font-family:'Courier New',monospace; font-size:16px;
+            color:rgba(180,200,255,0.8); background:rgba(0,0,0,0.6);
+            padding:10px 20px; border-radius:6px; pointer-events:none;
+            transition:opacity 1s ease;
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => { toast.style.opacity = '0'; }, 1500);
+        setTimeout(() => { toast.remove(); }, 2500);
+    }
+
+    function toggleFullscreen() {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(() => {});
+        } else {
+            document.exitFullscreen();
+        }
+    }
+
+    document.addEventListener('keydown', (e) => {
+        // Ignore if user is typing in an input/textarea
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+        if (e.key === 'c' || e.key === 'C') {
+            toggleClearMode();
+        } else if (e.key === 'f' || e.key === 'F') {
+            toggleFullscreen();
+        }
     });
 
     // Freeze checkbox (hidden unless showFreeze is true)
